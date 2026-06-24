@@ -7,6 +7,7 @@ import { runAnalysisPipeline } from '@/lib/pipeline'
 import { attachmentFromFile, revokeAttachmentPreview } from '@/lib/attachments'
 import { buildAnalysisRequirement } from '@/lib/analysis-input'
 import { extractStructuredInput } from '@/lib/structured-input'
+import type { StructuredInputState } from '@/lib/types'
 import AttachmentPill from './AttachmentPill'
 import {
   ArrowUpRight,
@@ -15,12 +16,18 @@ import {
   Sparkles,
 } from 'lucide-react'
 
+const emptyStructuredInput: StructuredInputState = {
+  businessGoal: '',
+  targetUser: '',
+  scenario: '',
+  successCriteria: '',
+  notes: '',
+}
+
 export default function InputPanel() {
   const router = useRouter()
   const {
-    requirementInput,
     setRequirementInput,
-    structuredInput,
     setStructuredField,
     mergeStructuredInput,
     attachments,
@@ -30,10 +37,12 @@ export default function InputPanel() {
   } = useWorkspaceStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [draftRequirement, setDraftRequirement] = useState(requirementInput)
+  const [draftRequirement, setDraftRequirement] = useState('')
+  const [draftStructuredInput, setDraftStructuredInput] =
+    useState<StructuredInputState>(emptyStructuredInput)
   const hasInput =
     draftRequirement.trim().length > 0 ||
-    Object.values(structuredInput).some((value) => value.trim().length > 0) ||
+    Object.values(draftStructuredInput).some((value) => value.trim().length > 0) ||
     attachments.length > 0
 
   const handleRequirementChange = (value: string) => {
@@ -41,11 +50,22 @@ export default function InputPanel() {
     setRequirementInput(value)
   }
 
+  const handleStructuredFieldChange = (
+    field: keyof StructuredInputState,
+    value: string
+  ) => {
+    setDraftStructuredInput((current) => ({
+      ...current,
+      [field]: value,
+    }))
+    setStructuredField(field, value)
+  }
+
   const handleAnalyze = async () => {
     setRequirementInput(draftRequirement)
     const extractedStructuredInput = extractStructuredInput(draftRequirement)
     const nextStructuredInput = {
-      ...structuredInput,
+      ...draftStructuredInput,
       ...Object.fromEntries(
         Object.entries(extractedStructuredInput).filter(([, value]) => typeof value === 'string' && value.trim())
       ),
@@ -158,8 +178,8 @@ export default function InputPanel() {
             <label className="rounded-[28px] border border-black/6 bg-white/74 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
               <span className="text-[11px] uppercase tracking-[0.24em] text-slate-400">业务目标</span>
               <input
-                value={structuredInput.businessGoal}
-                onChange={(e) => setStructuredField('businessGoal', e.target.value)}
+                value={draftStructuredInput.businessGoal}
+                onChange={(e) => handleStructuredFieldChange('businessGoal', e.target.value)}
                 placeholder="例如：冷启动激活、提升 IM 绑定率"
                 className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -168,8 +188,8 @@ export default function InputPanel() {
             <label className="rounded-[28px] border border-black/6 bg-white/74 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
               <span className="text-[11px] uppercase tracking-[0.24em] text-slate-400">目标用户</span>
               <input
-                value={structuredInput.targetUser}
-                onChange={(e) => setStructuredField('targetUser', e.target.value)}
+                value={draftStructuredInput.targetUser}
+                onChange={(e) => handleStructuredFieldChange('targetUser', e.target.value)}
                 placeholder="例如：泛电商用户"
                 className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -178,8 +198,8 @@ export default function InputPanel() {
             <label className="rounded-[28px] border border-black/6 bg-white/74 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
               <span className="text-[11px] uppercase tracking-[0.24em] text-slate-400">核心场景</span>
               <textarea
-                value={structuredInput.scenario}
-                onChange={(e) => setStructuredField('scenario', e.target.value)}
+                value={draftStructuredInput.scenario}
+                onChange={(e) => handleStructuredFieldChange('scenario', e.target.value)}
                 placeholder="例如：用户第一次接触 ChanClaw，完成冷启动和提醒接入"
                 className="mt-3 min-h-[84px] w-full resize-none border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -188,8 +208,8 @@ export default function InputPanel() {
             <label className="rounded-[28px] border border-black/6 bg-white/74 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
               <span className="text-[11px] uppercase tracking-[0.24em] text-slate-400">成功标准</span>
               <input
-                value={structuredInput.successCriteria}
-                onChange={(e) => setStructuredField('successCriteria', e.target.value)}
+                value={draftStructuredInput.successCriteria}
+                onChange={(e) => handleStructuredFieldChange('successCriteria', e.target.value)}
                 placeholder="例如：IM 绑定率"
                 className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
