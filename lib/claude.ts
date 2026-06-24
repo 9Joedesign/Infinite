@@ -142,7 +142,9 @@ export async function streamStageAnalysis(
 
         controller.close()
       } catch (error) {
-        controller.error(error)
+        const message = error instanceof Error ? error.message : 'Unknown analysis error'
+        controller.enqueue(encoder.encode(`分析服务暂时不可用，请检查模型服务环境变量或稍后重试。\n\n错误信息：${message}`))
+        controller.close()
       }
     },
   })
