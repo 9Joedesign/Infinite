@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { streamStageAnalysis } from '@/lib/claude'
 import type { AnalyzeRequest } from '@/lib/types'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const { streamStageAnalysis } = await import('@/lib/claude')
     const { stream, knowledgeContext } = await streamStageAnalysis(
       stage,
       requirement,
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Analyze error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Unknown internal server error'
+    return NextResponse.json({ error: 'Internal server error', message }, { status: 500 })
   }
 }
