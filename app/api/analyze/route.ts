@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
       stage,
       requirement,
       clarifyAnswers,
-      previousResults
+      previousResults,
+      req.headers
     )
     const knowledgeUsage = {
       used: knowledgeContext.used,

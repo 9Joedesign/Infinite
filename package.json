@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.95.1",
     "@tailwindcss/typography": "^0.5.19",
     "clsx": "^2.1.1",
+    "coze-coding-dev-sdk": "^0.7.24",
     "lucide-react": "^1.14.0",
     "mermaid": "^11.15.0",
     "next": "16.2.6",
