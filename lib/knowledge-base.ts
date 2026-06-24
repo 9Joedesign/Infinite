@@ -1,4 +1,5 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 interface KnowledgeDocument {
   id: string
@@ -29,18 +30,16 @@ export interface KnowledgeContext {
   content: string
 }
 
-const DEFAULT_KNOWLEDGE_DIR =
-  '/Users/cds-dn-694/.codex/skills/requirement-analysis-expert/references'
-const USER_KNOWLEDGE_DIR =
-  '/Users/cds-dn-694/Documents/New project/req-analyzer/data/knowledge'
+const KNOWLEDGE_ROOT = join(process.cwd(), 'data', 'knowledge')
+const BUILT_IN_KNOWLEDGE_DIR = join(KNOWLEDGE_ROOT, 'built-in')
+const USER_KNOWLEDGE_DIR = join(KNOWLEDGE_ROOT, 'uploads')
 const USER_KNOWLEDGE_MAX_CHARS = 16000
 
 const KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [
   {
     id: 'chanmama-ai-main-blueprint',
     title: '蝉妈妈AI-主蓝图',
-    absolutePath:
-      '/Users/cds-dn-694/.codex/skills/requirement-analysis-expert/references/蝉妈妈AI-主蓝图.md',
+    absolutePath: join(BUILT_IN_KNOWLEDGE_DIR, '蝉妈妈AI-主蓝图.md'),
     priority: 1,
     keywords: [
       '蝉妈妈',
@@ -61,8 +60,7 @@ const KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [
   {
     id: 'chanmama-ai-blueprint-details',
     title: '蝉妈妈AI-蓝图详情',
-    absolutePath:
-      '/Users/cds-dn-694/.codex/skills/requirement-analysis-expert/references/蝉妈妈AI-蓝图详情.md',
+    absolutePath: join(BUILT_IN_KNOWLEDGE_DIR, '蝉妈妈AI-蓝图详情.md'),
     priority: 2,
     keywords: [
       '蝉妈妈',
@@ -85,7 +83,7 @@ const KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [
 ]
 
 function getKnowledgeDir() {
-  return process.env.REQ_ANALYZER_KNOWLEDGE_DIR || DEFAULT_KNOWLEDGE_DIR
+  return KNOWLEDGE_ROOT
 }
 
 function normalize(text: string) {
