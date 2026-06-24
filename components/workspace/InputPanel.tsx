@@ -30,13 +30,20 @@ export default function InputPanel() {
   } = useWorkspaceStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [draftRequirement, setDraftRequirement] = useState(requirementInput)
   const hasInput =
-    requirementInput.trim().length > 0 ||
+    draftRequirement.trim().length > 0 ||
     Object.values(structuredInput).some((value) => value.trim().length > 0) ||
     attachments.length > 0
 
+  const handleRequirementChange = (value: string) => {
+    setDraftRequirement(value)
+    setRequirementInput(value)
+  }
+
   const handleAnalyze = async () => {
-    const extractedStructuredInput = extractStructuredInput(requirementInput)
+    setRequirementInput(draftRequirement)
+    const extractedStructuredInput = extractStructuredInput(draftRequirement)
     const nextStructuredInput = {
       ...structuredInput,
       ...Object.fromEntries(
@@ -45,7 +52,7 @@ export default function InputPanel() {
     }
 
     mergeStructuredInput(extractedStructuredInput)
-    const mergedRequirement = buildAnalysisRequirement(requirementInput, nextStructuredInput, attachments)
+    const mergedRequirement = buildAnalysisRequirement(draftRequirement, nextStructuredInput, attachments)
     if (!mergedRequirement.trim() || isAnalyzing) return
     router.push('/workspace')
     await runAnalysisPipeline(mergedRequirement.trim())
@@ -65,7 +72,7 @@ export default function InputPanel() {
 
     if (textSnippets.length) {
       const mergedText = textSnippets.join('\n\n')
-      setRequirementInput(requirementInput ? `${requirementInput.trim()}\n\n${mergedText}` : mergedText)
+      handleRequirementChange(draftRequirement ? `${draftRequirement.trim()}\n\n${mergedText}` : mergedText)
     }
   }
 
@@ -123,8 +130,8 @@ export default function InputPanel() {
         <div className="grid gap-4 lg:grid-cols-[1.5fr_0.9fr]">
           <div className="flex min-h-[320px] flex-col rounded-[30px] border border-black/6 bg-white/82 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
             <textarea
-              value={requirementInput}
-              onChange={(e) => setRequirementInput(e.target.value)}
+              value={draftRequirement}
+              onChange={(e) => handleRequirementChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="放啥都行！"
               className="min-h-[240px] w-full flex-1 resize-none border-0 bg-transparent text-base leading-8 tracking-[-0.01em] text-slate-800 placeholder:text-slate-400 focus:outline-none sm:min-h-[280px] sm:text-[17px]"

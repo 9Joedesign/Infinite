@@ -30,7 +30,7 @@ export interface KnowledgeContext {
   content: string
 }
 
-const KNOWLEDGE_ROOT = join(process.cwd(), 'data', 'knowledge')
+const KNOWLEDGE_ROOT = join(/* turbopackIgnore: true */ process.cwd(), 'data', 'knowledge')
 const BUILT_IN_KNOWLEDGE_DIR = join(KNOWLEDGE_ROOT, 'built-in')
 const USER_KNOWLEDGE_DIR = join(KNOWLEDGE_ROOT, 'uploads')
 const USER_KNOWLEDGE_MAX_CHARS = 16000
