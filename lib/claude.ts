@@ -10,9 +10,16 @@ import { STAGE6_PROMPT } from './prompts/stage6'
 import { loadKnowledgeContext, type KnowledgeContext } from './knowledge-base'
 import type { StageId } from './types'
 
+const anthropicAuthToken = process.env.ANTHROPIC_AUTH_TOKEN
+const anthropicBaseURL = process.env.ANTHROPIC_BASE_URL
+
 const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  ...(anthropicBaseURL ? { baseURL: anthropicBaseURL } : {}),
+  ...(anthropicAuthToken
+    ? { authToken: anthropicAuthToken, apiKey: null }
+    : { apiKey: process.env.ANTHROPIC_API_KEY }),
 })
+const MODEL_NAME = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6'
 
 const STAGE_PROMPTS: Record<StageId, string> = {
   0: STAGE0_PROMPT,
@@ -101,7 +108,7 @@ export async function streamStageAnalysis(
     async start(controller) {
       try {
         const response = await client.messages.create({
-          model: 'claude-sonnet-4-6',
+          model: MODEL_NAME,
           max_tokens: 4096,
           system: [
             {

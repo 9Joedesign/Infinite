@@ -24,7 +24,7 @@ const STATUS_ICON: Record<StageStatus, React.ReactNode> = {
 export default function StageCard({ stageId, title, subtitle, status, content }: StageCardProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
-  const isActive = status === 'running' || status === 'done'
+  const isActive = status === 'running' || status === 'done' || status === 'error'
   const stageNumber = String(stageId + 1).padStart(2, '0')
 
   const handleCopy = async () => {
@@ -113,7 +113,9 @@ export default function StageCard({ stageId, title, subtitle, status, content }:
 
       {isActive && !collapsed && content && (
         <div className="border-t border-black/6 px-5 pb-6 pt-6">
-          <div className="prose prose-sm max-w-none prose-headings:text-slate-900 prose-p:text-slate-700 prose-strong:text-slate-900 prose-table:text-xs prose-th:bg-slate-50 prose-th:font-medium prose-td:text-slate-700">
+          <div className={`prose prose-sm max-w-none prose-headings:text-slate-900 prose-strong:text-slate-900 prose-table:text-xs prose-th:bg-slate-50 prose-th:font-medium prose-td:text-slate-700 ${
+            status === 'error' ? 'prose-p:text-red-600' : 'prose-p:text-slate-700'
+          }`}>
             <MarkdownRenderer content={content} />
           </div>
           {status === 'running' && (

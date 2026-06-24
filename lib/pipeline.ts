@@ -14,7 +14,8 @@ async function fetchStream(
   })
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
+    const errorText = await response.text().catch(() => '')
+    throw new Error(errorText || `HTTP ${response.status}`)
   }
 
   const encodedKnowledgeUsage = response.headers.get('X-Knowledge-Usage')
@@ -146,6 +147,16 @@ export async function runAnalysisPipeline(
     const stages = useWorkspaceStore.getState().stages
     for (const id of [0, 1, 2, 3, 4, 5, 6] as StageId[]) {
       if (stages[id].status === 'running') {
+        store.appendStageContent(
+          id,
+          [
+            '分析服务暂时不可用，请检查模型服务环境变量或稍后重试。',
+            '',
+            error instanceof Error ? `错误信息：${error.message}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n')
+        )
         store.setStageStatus(id, 'error')
       }
     }
