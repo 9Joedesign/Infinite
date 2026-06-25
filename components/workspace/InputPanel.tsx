@@ -234,17 +234,6 @@ export default function InputPanel() {
                 className="mt-3 min-h-14 w-full resize-none border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
             </label>
-
-            <label className="rounded-[28px] border border-black/6 bg-white/74 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
-              <span className="text-[11px] uppercase tracking-[0.24em] text-slate-400">成功标准</span>
-              <input
-                value={draftStructuredInput.successCriteria}
-                onChange={(e) => handleStructuredFieldChange('successCriteria', e.target.value)}
-                name="successCriteria"
-                placeholder="例如：IM 绑定率"
-                className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
-              />
-            </label>
           </div>
         </div>
 
