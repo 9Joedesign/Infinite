@@ -204,6 +204,7 @@ export default function ReportWorkspace() {
           </div>
 
           <div className="flex flex-col gap-18">
+            <div id="native-analysis-fallback" />
             <AnalysisPipeline />
             <FinalReport />
           </div>
