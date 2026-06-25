@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { useWorkspaceStore } from '@/store/workspaceStore'
-import { runAnalysisPipeline } from '@/lib/pipeline'
 import { attachmentFromFile, revokeAttachmentPreview } from '@/lib/attachments'
 import { buildAnalysisRequirement } from '@/lib/analysis-input'
 import { extractStructuredInput } from '@/lib/structured-input'
@@ -34,6 +33,7 @@ export default function InputPanel() {
     addAttachments,
     removeAttachment,
     isAnalyzing,
+    queueAnalysis,
   } = useWorkspaceStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -74,8 +74,8 @@ export default function InputPanel() {
     mergeStructuredInput(extractedStructuredInput)
     const mergedRequirement = buildAnalysisRequirement(draftRequirement, nextStructuredInput, attachments)
     if (!mergedRequirement.trim() || isAnalyzing) return
+    queueAnalysis(mergedRequirement.trim())
     router.push('/workspace')
-    await runAnalysisPipeline(mergedRequirement.trim())
   }
 
   const handleFiles = async (fileList: FileList | File[]) => {

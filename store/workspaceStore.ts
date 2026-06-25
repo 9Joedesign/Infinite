@@ -10,6 +10,11 @@ import type {
   StructuredInputState,
 } from '@/lib/types'
 
+interface QueuedAnalysis {
+  id: string
+  requirement: string
+}
+
 const makeInitialStages = (): Record<StageId, StageResult> => ({
   0: { stageId: 0, status: 'idle', content: '' },
   1: { stageId: 1, status: 'idle', content: '' },
@@ -39,6 +44,7 @@ interface WorkspaceState {
   stages: Record<StageId, StageResult>
   knowledgeUsage: KnowledgeUsage | null
   reportHistory: ReportHistoryItem[]
+  queuedAnalysis: QueuedAnalysis | null
 
   setRequirementInput: (v: string) => void
   setClarifyAnswers: (v: string) => void
@@ -53,6 +59,8 @@ interface WorkspaceState {
   setKnowledgeUsage: (usage: KnowledgeUsage | null) => void
   addReportHistory: (item: ReportHistoryItem) => void
   openReportHistory: (id: string) => void
+  queueAnalysis: (requirement: string) => void
+  consumeQueuedAnalysis: () => QueuedAnalysis | null
   setStageStatus: (id: StageId, status: StageStatus) => void
   appendStageContent: (id: StageId, text: string) => void
   resetStages: () => void
@@ -72,6 +80,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
   stages: makeInitialStages(),
   knowledgeUsage: null,
   reportHistory: [],
+  queuedAnalysis: null,
 
   setRequirementInput: (v) => set({ requirementInput: v }),
   setClarifyAnswers: (v) => set({ clarifyAnswers: v }),
@@ -136,6 +145,21 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         isAnalyzing: false,
       }
     }),
+  queueAnalysis: (requirement) =>
+    set({
+      queuedAnalysis: {
+        id: `${Date.now()}`,
+        requirement,
+      },
+    }),
+  consumeQueuedAnalysis: () => {
+    let queuedAnalysis: QueuedAnalysis | null = null
+    set((state) => {
+      queuedAnalysis = state.queuedAnalysis
+      return { queuedAnalysis: null }
+    })
+    return queuedAnalysis
+  },
 
   setStageStatus: (id, status) =>
     set((state) => ({
@@ -160,6 +184,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     set({
       stages: makeInitialStages(),
       knowledgeUsage: null,
+      queuedAnalysis: null,
       reportReady: false,
     }),
 
@@ -174,6 +199,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       reportReady: false,
       stages: makeInitialStages(),
       knowledgeUsage: null,
+      queuedAnalysis: null,
     }),
     }),
     {
@@ -188,6 +214,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         stages: state.stages,
         knowledgeUsage: state.knowledgeUsage,
         reportHistory: state.reportHistory,
+        queuedAnalysis: state.queuedAnalysis,
       }),
     }
   )

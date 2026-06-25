@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Files, Goal, ImageIcon, ListChecks, Target } from 'lucide-react'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { runAnalysisPipeline } from '@/lib/pipeline'
 import AttachmentPill from './AttachmentPill'
 import AnalysisPipeline from './AnalysisPipeline'
 import FinalReport from './FinalReport'
@@ -31,8 +32,10 @@ function StructuredCard({
 }
 
 export default function ReportWorkspace() {
-  const { requirementInput, structuredInput, attachments } = useWorkspaceStore()
+  const { requirementInput, structuredInput, attachments, consumeQueuedAnalysis, isAnalyzing } =
+    useWorkspaceStore()
   const [collapsed, setCollapsed] = useState(true)
+  const startedAnalysisIdRef = useRef<string | null>(null)
   const structuredSections = [
     {
       title: '业务目标',
@@ -63,6 +66,16 @@ export default function ReportWorkspace() {
 
   const shouldShowOriginalPrompt = requirementInput.trim().length > 0
   const shouldShowAttachments = attachments.length > 0
+
+  useEffect(() => {
+    if (isAnalyzing) return
+
+    const queuedAnalysis = consumeQueuedAnalysis()
+    if (!queuedAnalysis || startedAnalysisIdRef.current === queuedAnalysis.id) return
+
+    startedAnalysisIdRef.current = queuedAnalysis.id
+    void runAnalysisPipeline(queuedAnalysis.requirement)
+  }, [consumeQueuedAnalysis, isAnalyzing])
 
   return (
     <main
