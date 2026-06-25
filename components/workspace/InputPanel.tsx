@@ -120,7 +120,7 @@ export default function InputPanel() {
     e.target.value = ''
   }
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files?.length) {
@@ -143,7 +143,13 @@ export default function InputPanel() {
   }
 
   return (
-    <div
+    <form
+      action="/workspace"
+      method="get"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void handleAnalyze()
+      }}
       onDragOver={(e) => {
         e.preventDefault()
         setIsDragging(true)
@@ -172,6 +178,7 @@ export default function InputPanel() {
               onChange={(e) => handleRequirementChange(e.target.value)}
               onInput={(e) => handleRequirementChange(e.currentTarget.value)}
               onKeyDown={handleKeyDown}
+              name="requirement"
               placeholder="放啥都行！"
               className="min-h-[240px] w-full flex-1 resize-none border-0 bg-transparent text-base leading-8 tracking-[-0.01em] text-slate-800 placeholder:text-slate-400 focus:outline-none sm:min-h-[280px] sm:text-[17px]"
               disabled={isAnalyzing}
@@ -199,6 +206,7 @@ export default function InputPanel() {
               <input
                 value={draftStructuredInput.businessGoal}
                 onChange={(e) => handleStructuredFieldChange('businessGoal', e.target.value)}
+                name="businessGoal"
                 placeholder="例如：冷启动激活、提升 IM 绑定率"
                 className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -209,6 +217,7 @@ export default function InputPanel() {
               <input
                 value={draftStructuredInput.targetUser}
                 onChange={(e) => handleStructuredFieldChange('targetUser', e.target.value)}
+                name="targetUser"
                 placeholder="例如：泛电商用户"
                 className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -219,6 +228,7 @@ export default function InputPanel() {
               <textarea
                 value={draftStructuredInput.scenario}
                 onChange={(e) => handleStructuredFieldChange('scenario', e.target.value)}
+                name="scenario"
                 placeholder="例如：用户第一次接触 ChanClaw，完成冷启动和提醒接入"
                 className="mt-3 min-h-[84px] w-full resize-none border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -229,6 +239,7 @@ export default function InputPanel() {
               <input
                 value={draftStructuredInput.successCriteria}
                 onChange={(e) => handleStructuredFieldChange('successCriteria', e.target.value)}
+                name="successCriteria"
                 placeholder="例如：IM 绑定率"
                 className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
@@ -262,8 +273,7 @@ export default function InputPanel() {
 
         <div className="mt-6 flex justify-center border-t border-black/6 pt-5">
           <button
-            type="button"
-            onClick={handleAnalyze}
+            type="submit"
             disabled={isAnalyzing}
             className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
               hasInput && !isAnalyzing
@@ -285,6 +295,6 @@ export default function InputPanel() {
           </button>
         </div>
       </div>
-    </div>
+    </form>
   )
 }

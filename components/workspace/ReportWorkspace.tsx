@@ -71,13 +71,26 @@ export default function ReportWorkspace() {
   useEffect(() => {
     if (isAnalyzing) return
 
-    const queuedAnalysis = consumeQueuedAnalysis() ?? readPendingAnalysis()
+    const queryRequirement =
+      typeof window === 'undefined'
+        ? ''
+        : new URLSearchParams(window.location.search).get('requirement')?.trim()
+    const queuedAnalysis =
+      consumeQueuedAnalysis() ??
+      readPendingAnalysis() ??
+      (queryRequirement
+        ? {
+            id: `query-${queryRequirement}`,
+            requirement: queryRequirement,
+          }
+        : null)
+
     if (!queuedAnalysis || startedAnalysisIdRef.current === queuedAnalysis.id) return
 
     startedAnalysisIdRef.current = queuedAnalysis.id
     clearPendingAnalysis()
 
-    if (window.location.search.includes('run=1')) {
+    if (window.location.search) {
       window.history.replaceState(null, '', '/workspace')
     }
 
