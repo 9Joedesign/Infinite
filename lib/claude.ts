@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { ChatOpenAI } from '@langchain/openai'
 import { HeaderUtils } from 'coze-coding-dev-sdk'
 import { SYSTEM_PROMPT } from './prompts/system'
@@ -79,13 +78,7 @@ async function streamCozeChatCompletion(
       thinking: { type: 'disabled' },
     },
   })
-  const langchainMessages = messages.map((message) => {
-    if (message.role === 'system') return new SystemMessage(message.content)
-    if (message.role === 'assistant') return new AIMessage(message.content)
-    return new HumanMessage(message.content)
-  })
-
-  for await (const event of await client.stream(langchainMessages)) {
+  for await (const event of await client.stream(messages)) {
     if (event.content) {
       onText(event.content.toString())
     }
