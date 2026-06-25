@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { ChatOpenAI } from '@langchain/openai'
 import { HeaderUtils } from 'coze-coding-dev-sdk'
 import { SYSTEM_PROMPT } from './prompts/system'
 import { STAGE0_PROMPT } from './prompts/stage0'
@@ -48,7 +50,7 @@ function getCozeApiConfig() {
 
   return {
     apiKey,
-    chatCompletionsUrl: `${modelBaseUrl.replace(/\/$/, '')}/chat/completions`,
+    modelBaseUrl,
   }
 }
 
@@ -57,72 +59,36 @@ async function streamCozeChatCompletion(
   requestHeaders: Headers | undefined,
   onText: (text: string) => void
 ) {
-  const { apiKey, chatCompletionsUrl } = getCozeApiConfig()
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), COZE_TIMEOUT_MS)
-
-  try {
-    const response = await fetch(chatCompletionsUrl, {
-      method: 'POST',
-      headers: {
+  const { apiKey, modelBaseUrl } = getCozeApiConfig()
+  const client = new ChatOpenAI({
+    model: COZE_MODEL_NAME,
+    apiKey,
+    configuration: {
+      baseURL: modelBaseUrl,
+      defaultHeaders: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
         'X-Client-Sdk': 'infinite-requirement-studio',
         ...getForwardHeaders(requestHeaders),
       },
-      body: JSON.stringify({
-        model: COZE_MODEL_NAME,
-        messages,
-        temperature: 0.3,
-        stream: true,
-        thinking: { type: 'disabled' },
-      }),
-      signal: controller.signal,
-    })
+    },
+    streaming: true,
+    temperature: 0.3,
+    timeout: COZE_TIMEOUT_MS,
+    maxRetries: 0,
+    modelKwargs: {
+      thinking: { type: 'disabled' },
+    },
+  })
+  const langchainMessages = messages.map((message) => {
+    if (message.role === 'system') return new SystemMessage(message.content)
+    if (message.role === 'assistant') return new AIMessage(message.content)
+    return new HumanMessage(message.content)
+  })
 
-    if (!response.ok || !response.body) {
-      const errorText = await response.text().catch(() => '')
-      throw new Error(errorText || `Coze model request failed with HTTP ${response.status}`)
+  for await (const event of await client.stream(langchainMessages)) {
+    if (event.content) {
+      onText(event.content.toString())
     }
-
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split(/\r?\n/)
-      buffer = lines.pop() || ''
-
-      for (const rawLine of lines) {
-        const line = rawLine.trim()
-        if (!line.startsWith('data:')) continue
-
-        const data = line.slice('data:'.length).trim()
-        if (!data || data === '[DONE]') continue
-
-        try {
-          const payload = JSON.parse(data) as {
-            choices?: Array<{
-              delta?: { content?: string }
-              message?: { content?: string }
-            }>
-          }
-          const text =
-            payload.choices?.[0]?.delta?.content ||
-            payload.choices?.[0]?.message?.content ||
-            ''
-          if (text) onText(text)
-        } catch {
-          // Ignore non-JSON SSE keepalive frames.
-        }
-      }
-    }
-  } finally {
-    clearTimeout(timeout)
   }
 }
 
