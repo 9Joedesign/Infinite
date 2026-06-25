@@ -40,6 +40,7 @@ export default function Header() {
     reportHistory,
     openReportHistory,
     reportReady,
+    isAnalyzing,
     submittedRequirement,
     requirementInput,
     stages,
@@ -47,7 +48,11 @@ export default function Header() {
   } = useWorkspaceStore()
   const thinkingActive = pathname === '/' || pathname.startsWith('/workspace')
   const knowledgeActive = pathname.startsWith('/knowledge')
-  const hasCurrentReport = reportReady && (submittedRequirement.trim() || requirementInput.trim())
+  const hasStartedReport = Object.values(stages).some((stage) => stage.status !== 'idle')
+  const hasRunningStage = Object.values(stages).some((stage) => stage.status === 'running')
+  const hasCurrentReport =
+    (reportReady || isAnalyzing || hasStartedReport) &&
+    (submittedRequirement.trim() || requirementInput.trim())
   const currentRequirement = submittedRequirement || requirementInput
   const currentTitleSource = currentRequirement
     .replace(/[#>*`\-[\]\n\r]/g, ' ')
@@ -128,7 +133,11 @@ export default function Header() {
                         <span className="min-w-0">
                           <span className="block truncate text-sm font-medium text-slate-900">{item.title}</span>
                           <span className="mt-1 block text-xs text-slate-400">
-                            {item.id === 'current' ? '当前分析报告' : formatHistoryTime(item.createdAt)}
+                            {item.id === 'current'
+                              ? isAnalyzing || hasRunningStage
+                                ? '分析中'
+                                : '当前分析报告'
+                              : formatHistoryTime(item.createdAt)}
                           </span>
                         </span>
                       </button>
@@ -136,7 +145,7 @@ export default function Header() {
                   </div>
                 ) : (
                   <div className="rounded-[18px] bg-slate-50 px-3 py-4 text-sm leading-6 text-slate-500">
-                    暂无历史报告。完成一次分析后会自动出现在这里。
+                    暂无历史报告。开始一次分析后会自动出现在这里。
                   </div>
                 )}
               </div>

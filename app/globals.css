@@ -49,6 +49,18 @@ body {
   text-orientation: mixed;
 }
 
+.analysis-input-form:has(.analysis-requirement-input:not(:placeholder-shown))
+  .analysis-submit-button:not(:disabled) {
+  background: #0f172a;
+  color: #fff;
+  cursor: pointer;
+}
+
+.analysis-input-form:has(.analysis-requirement-input:not(:placeholder-shown))
+  .analysis-submit-button:not(:disabled):hover {
+  background: #334155;
+}
+
 /* Markdown table styles */
 .prose table {
   width: 100%;

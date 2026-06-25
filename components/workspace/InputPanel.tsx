@@ -156,7 +156,7 @@ export default function InputPanel() {
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      className={`mx-auto w-full max-w-5xl rounded-[38px] border bg-white/64 p-5 shadow-[0_35px_120px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-all duration-300 sm:p-7 ${
+      className={`analysis-input-form mx-auto w-full max-w-5xl rounded-[38px] border bg-white/64 p-5 shadow-[0_35px_120px_rgba(15,23,42,0.12)] backdrop-blur-xl transition-all duration-300 sm:p-7 ${
         isDragging ? 'border-slate-900/15 ring-1 ring-slate-900/10' : 'border-white/60'
       }`}
     >
@@ -180,7 +180,7 @@ export default function InputPanel() {
               onKeyDown={handleKeyDown}
               name="requirement"
               placeholder="放啥都行！"
-              className="min-h-[240px] w-full flex-1 resize-none border-0 bg-transparent text-base leading-8 tracking-[-0.01em] text-slate-800 placeholder:text-slate-400 focus:outline-none sm:min-h-[280px] sm:text-[17px]"
+              className="analysis-requirement-input min-h-[240px] w-full flex-1 resize-none border-0 bg-transparent text-base leading-8 tracking-[-0.01em] text-slate-800 placeholder:text-slate-400 focus:outline-none sm:min-h-[280px] sm:text-[17px]"
               disabled={isAnalyzing}
             />
 
@@ -275,7 +275,7 @@ export default function InputPanel() {
           <button
             type="submit"
             disabled={isAnalyzing}
-            className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
+            className={`analysis-submit-button inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
               hasInput && !isAnalyzing
                 ? 'bg-slate-900 text-white hover:bg-slate-700'
                 : 'cursor-not-allowed bg-slate-200 text-slate-400'
