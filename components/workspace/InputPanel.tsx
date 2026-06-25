@@ -37,6 +37,7 @@ export default function InputPanel() {
     queueAnalysis,
   } = useWorkspaceStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const requirementTextareaRef = useRef<HTMLTextAreaElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [draftRequirement, setDraftRequirement] = useState('')
   const [draftStructuredInput, setDraftStructuredInput] =
@@ -63,8 +64,14 @@ export default function InputPanel() {
   }
 
   const handleAnalyze = async () => {
-    setRequirementInput(draftRequirement)
-    const extractedStructuredInput = extractStructuredInput(draftRequirement)
+    const latestRequirement = requirementTextareaRef.current?.value ?? draftRequirement
+
+    if (latestRequirement !== draftRequirement) {
+      setDraftRequirement(latestRequirement)
+    }
+
+    setRequirementInput(latestRequirement)
+    const extractedStructuredInput = extractStructuredInput(latestRequirement)
     const nextStructuredInput = {
       ...draftStructuredInput,
       ...Object.fromEntries(
@@ -73,7 +80,7 @@ export default function InputPanel() {
     }
 
     mergeStructuredInput(extractedStructuredInput)
-    const mergedRequirement = buildAnalysisRequirement(draftRequirement, nextStructuredInput, attachments)
+    const mergedRequirement = buildAnalysisRequirement(latestRequirement, nextStructuredInput, attachments)
     if (!mergedRequirement.trim() || isAnalyzing) return
     const analysisRequirement = mergedRequirement.trim()
 
@@ -160,8 +167,10 @@ export default function InputPanel() {
         <div className="grid gap-4 lg:grid-cols-[1.5fr_0.9fr]">
           <div className="flex min-h-[320px] flex-col rounded-[30px] border border-black/6 bg-white/82 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
             <textarea
+              ref={requirementTextareaRef}
               value={draftRequirement}
               onChange={(e) => handleRequirementChange(e.target.value)}
+              onInput={(e) => handleRequirementChange(e.currentTarget.value)}
               onKeyDown={handleKeyDown}
               placeholder="放啥都行！"
               className="min-h-[240px] w-full flex-1 resize-none border-0 bg-transparent text-base leading-8 tracking-[-0.01em] text-slate-800 placeholder:text-slate-400 focus:outline-none sm:min-h-[280px] sm:text-[17px]"
@@ -255,8 +264,12 @@ export default function InputPanel() {
           <button
             type="button"
             onClick={handleAnalyze}
-            disabled={!hasInput || isAnalyzing}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+            disabled={isAnalyzing}
+            className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
+              hasInput && !isAnalyzing
+                ? 'bg-slate-900 text-white hover:bg-slate-700'
+                : 'cursor-not-allowed bg-slate-200 text-slate-400'
+            }`}
           >
             {isAnalyzing ? (
               <>
