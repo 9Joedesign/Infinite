@@ -11,7 +11,7 @@ import { STAGE6_PROMPT } from './prompts/stage6'
 import { loadKnowledgeContext, type KnowledgeContext } from './knowledge-base'
 import type { StageId } from './types'
 
-const COZE_MODEL_NAME = process.env.COZE_LLM_MODEL || 'doubao-seed-2-0-pro-260215'
+const COZE_MODEL_NAME = process.env.COZE_LLM_MODEL || 'doubao-seed-1-8-251228'
 const COZE_TIMEOUT_MS = Number(process.env.COZE_LLM_TIMEOUT_MS || 120000)
 const ANTHROPIC_MODEL_NAME = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6'
 
@@ -53,7 +53,7 @@ function compactKnowledgeForCoze(knowledgeContext: KnowledgeContext) {
       `- ${document.title}：${document.reason}`
     ),
     '',
-    truncateForCoze(knowledgeContext.content, 9000),
+    truncateForCoze(knowledgeContext.content, 3200),
   ].join('\n')
 }
 
@@ -68,6 +68,16 @@ function compactPreviousResultsForCoze(
       truncateForCoze(content, 1800),
     ])
   ) as Partial<Record<StageId, string>>
+}
+
+function buildCozeSystemPrompt(stagePrompt: string) {
+  return [
+    '你是需求智能前置分析助手。从产品设计师视角分析用户、场景、路径、信息结构、体验机会和风险。',
+    '要求：输出中文 Markdown；结论要有依据；不写 PRD 和技术方案；知识库未覆盖时标注“待确认”。',
+    '每个阶段开头必须包含：**知识库依据**：已命中[文档名] / 已检索但未命中 / 未覆盖待确认。',
+    '',
+    truncateForCoze(stagePrompt, 1600),
+  ].join('\n')
 }
 
 const STAGE_PROMPTS: Record<StageId, string> = {
@@ -203,7 +213,7 @@ export async function streamStageAnalysis(
           const messages: Message[] = [
             {
               role: 'system',
-              content: `${SYSTEM_PROMPT}\n\n## 知识库使用要求\n- 每次分析都必须先检索内置知识库。\n- 如果知识库命中，在阶段输出中必须简要标注“知识库依据”，说明使用了哪些文档。\n- 涉及蝉妈妈AI、ChanClaw、IM接入、技能管理、数据看板等内容时，优先参考知识库证据。\n- 对知识库未覆盖的内容，必须标注为“待确认”，不要伪装成已知事实。\n\n${stagePrompt}`,
+              content: buildCozeSystemPrompt(stagePrompt),
             },
             {
               role: 'user',
