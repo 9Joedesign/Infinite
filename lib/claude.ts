@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { HeaderUtils, LLMClient, type Message } from 'coze-coding-dev-sdk'
+import { Config, HeaderUtils, LLMClient, type Message } from 'coze-coding-dev-sdk'
 import { SYSTEM_PROMPT } from './prompts/system'
 import { STAGE0_PROMPT } from './prompts/stage0'
 import { STAGE1_PROMPT } from './prompts/stage1'
@@ -12,6 +12,7 @@ import { loadKnowledgeContext, type KnowledgeContext } from './knowledge-base'
 import type { StageId } from './types'
 
 const COZE_MODEL_NAME = process.env.COZE_LLM_MODEL || 'doubao-seed-2-0-pro-260215'
+const COZE_TIMEOUT_MS = Number(process.env.COZE_LLM_TIMEOUT_MS || 120000)
 const ANTHROPIC_MODEL_NAME = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6'
 
 function hasAnthropicCredentials() {
@@ -33,6 +34,40 @@ function getForwardHeaders(headers?: Headers) {
   if (!headers) return undefined
   const forwardHeaders = HeaderUtils.extractForwardHeaders(headers)
   return Object.keys(forwardHeaders).length > 0 ? forwardHeaders : undefined
+}
+
+function truncateForCoze(content: string, maxChars: number) {
+  const compact = content.replace(/\n{3,}/g, '\n\n').trim()
+  if (compact.length <= maxChars) return compact
+  return `${compact.slice(0, maxChars)}\n\n[内容较长，已为 Coze 预览环境截断。]`
+}
+
+function compactKnowledgeForCoze(knowledgeContext: KnowledgeContext) {
+  if (!knowledgeContext.used) return knowledgeContext.content
+
+  return [
+    '## 知识库调用情况',
+    '本次已调用知识库。请优先依据下列文档来源判断；未覆盖的细节必须标注“待确认”。',
+    '',
+    ...knowledgeContext.documents.map((document) =>
+      `- ${document.title}：${document.reason}`
+    ),
+    '',
+    truncateForCoze(knowledgeContext.content, 9000),
+  ].join('\n')
+}
+
+function compactPreviousResultsForCoze(
+  previousResults?: Partial<Record<StageId, string>>
+) {
+  if (!previousResults) return previousResults
+
+  return Object.fromEntries(
+    Object.entries(previousResults).map(([stage, content]) => [
+      stage,
+      truncateForCoze(content, 1800),
+    ])
+  ) as Partial<Record<StageId, string>>
 }
 
 const STAGE_PROMPTS: Record<StageId, string> = {
@@ -157,7 +192,14 @@ export async function streamStageAnalysis(
             }
           }
         } else {
-          const client = new LLMClient()
+          const cozeUserMessage = buildUserMessage(
+            stage,
+            requirement,
+            clarifyAnswers,
+            compactPreviousResultsForCoze(previousResults),
+            compactKnowledgeForCoze(knowledgeContext)
+          )
+          const client = new LLMClient(new Config({ timeout: COZE_TIMEOUT_MS }))
           const messages: Message[] = [
             {
               role: 'system',
@@ -165,7 +207,7 @@ export async function streamStageAnalysis(
             },
             {
               role: 'user',
-              content: userMessage,
+              content: cozeUserMessage,
             },
           ]
           const response = client.stream(
