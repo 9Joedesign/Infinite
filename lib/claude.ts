@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { Config, HeaderUtils, LLMClient, type Message } from 'coze-coding-dev-sdk'
+import { HeaderUtils } from 'coze-coding-dev-sdk'
 import { SYSTEM_PROMPT } from './prompts/system'
 import { STAGE0_PROMPT } from './prompts/stage0'
 import { STAGE1_PROMPT } from './prompts/stage1'
@@ -34,6 +34,96 @@ function getForwardHeaders(headers?: Headers) {
   if (!headers) return undefined
   const forwardHeaders = HeaderUtils.extractForwardHeaders(headers)
   return Object.keys(forwardHeaders).length > 0 ? forwardHeaders : undefined
+}
+
+function getCozeApiConfig() {
+  const apiKey = process.env.COZE_WORKLOAD_IDENTITY_API_KEY
+  const modelBaseUrl = process.env.COZE_INTEGRATION_MODEL_BASE_URL
+
+  if (!apiKey || !modelBaseUrl) {
+    throw new Error(
+      'Missing Coze model credentials. Set COZE_WORKLOAD_IDENTITY_API_KEY and COZE_INTEGRATION_MODEL_BASE_URL.'
+    )
+  }
+
+  return {
+    apiKey,
+    chatCompletionsUrl: `${modelBaseUrl.replace(/\/$/, '')}/chat/completions`,
+  }
+}
+
+async function streamCozeChatCompletion(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+  requestHeaders: Headers | undefined,
+  onText: (text: string) => void
+) {
+  const { apiKey, chatCompletionsUrl } = getCozeApiConfig()
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), COZE_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(chatCompletionsUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'X-Client-Sdk': 'infinite-requirement-studio',
+        ...getForwardHeaders(requestHeaders),
+      },
+      body: JSON.stringify({
+        model: COZE_MODEL_NAME,
+        messages,
+        temperature: 0.3,
+        stream: true,
+        thinking: { type: 'disabled' },
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok || !response.body) {
+      const errorText = await response.text().catch(() => '')
+      throw new Error(errorText || `Coze model request failed with HTTP ${response.status}`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split(/\r?\n/)
+      buffer = lines.pop() || ''
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim()
+        if (!line.startsWith('data:')) continue
+
+        const data = line.slice('data:'.length).trim()
+        if (!data || data === '[DONE]') continue
+
+        try {
+          const payload = JSON.parse(data) as {
+            choices?: Array<{
+              delta?: { content?: string }
+              message?: { content?: string }
+            }>
+          }
+          const text =
+            payload.choices?.[0]?.delta?.content ||
+            payload.choices?.[0]?.message?.content ||
+            ''
+          if (text) onText(text)
+        } catch {
+          // Ignore non-JSON SSE keepalive frames.
+        }
+      }
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function truncateForCoze(content: string, maxChars: number) {
@@ -209,8 +299,7 @@ export async function streamStageAnalysis(
             compactPreviousResultsForCoze(previousResults),
             compactKnowledgeForCoze(knowledgeContext)
           )
-          const client = new LLMClient(new Config({ timeout: COZE_TIMEOUT_MS }))
-          const messages: Message[] = [
+          const messages: Array<{ role: 'system' | 'user'; content: string }> = [
             {
               role: 'system',
               content: buildCozeSystemPrompt(stagePrompt),
@@ -220,22 +309,12 @@ export async function streamStageAnalysis(
               content: cozeUserMessage,
             },
           ]
-          const response = client.stream(
-            messages,
-            {
-              model: COZE_MODEL_NAME,
-              temperature: 0.3,
-              streaming: true,
-            },
-            undefined,
-            getForwardHeaders(requestHeaders)
-          )
 
-          for await (const event of response) {
-            if (event.content) {
-              controller.enqueue(encoder.encode(event.content.toString()))
-            }
-          }
+          await streamCozeChatCompletion(
+            messages,
+            requestHeaders,
+            (text) => controller.enqueue(encoder.encode(text))
+          )
         }
 
         controller.close()
