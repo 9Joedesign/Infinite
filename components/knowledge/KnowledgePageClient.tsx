@@ -3,7 +3,7 @@
 import Header from '@/components/layout/Header'
 import type { KnowledgeListItem } from '@/lib/knowledge-base'
 import { Download, FileText, Loader2, Upload } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useId, useState } from 'react'
 
 function formatSize(size: number) {
   if (size < 1024) return `${size} B`
@@ -31,7 +31,7 @@ export default function KnowledgePageClient({
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(initialError)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputId = useId()
 
   const loadDocuments = async () => {
     try {
@@ -86,20 +86,24 @@ export default function KnowledgePageClient({
                 管理需求分析会调用的业务语境、蓝图和风险经验。上传的文档会默认参与后续分析。
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/6 bg-white/72 px-4 text-sm font-medium text-slate-600 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition hover:bg-white hover:text-slate-950 disabled:bg-slate-100 disabled:text-slate-400"
+            <label
+              htmlFor={fileInputId}
+              aria-disabled={uploading}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/6 bg-white/72 px-4 text-sm font-medium text-slate-600 shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition ${
+                uploading
+                  ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                  : 'cursor-pointer hover:bg-white hover:text-slate-950'
+              }`}
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               上传知识
-            </button>
+            </label>
             <input
-              ref={fileInputRef}
+              id={fileInputId}
               type="file"
               accept=".md,.markdown,.txt,.json,.csv,.tsv"
-              className="hidden"
+              className="sr-only"
+              disabled={uploading}
               onChange={handleUpload}
             />
           </div>
