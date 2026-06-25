@@ -225,12 +225,12 @@ export default function InputPanel() {
 
             <label className="rounded-[28px] border border-black/6 bg-white/74 p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
               <span className="text-[11px] uppercase tracking-[0.24em] text-slate-400">核心场景</span>
-              <textarea
+              <input
                 value={draftStructuredInput.scenario}
                 onChange={(e) => handleStructuredFieldChange('scenario', e.target.value)}
                 name="scenario"
                 placeholder="例如：用户第一次接触 ChanClaw，完成冷启动和提醒接入"
-                className="mt-3 min-h-[84px] w-full resize-none border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                className="mt-3 w-full border-0 bg-transparent text-sm leading-7 text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
             </label>
 
