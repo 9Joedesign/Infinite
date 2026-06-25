@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Files, Goal, ImageIcon, ListChecks, Target } from 'lucide-react'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { runAnalysisPipeline } from '@/lib/pipeline'
+import { clearPendingAnalysis, readPendingAnalysis } from '@/lib/pending-analysis'
 import AttachmentPill from './AttachmentPill'
 import AnalysisPipeline from './AnalysisPipeline'
 import FinalReport from './FinalReport'
@@ -70,10 +71,16 @@ export default function ReportWorkspace() {
   useEffect(() => {
     if (isAnalyzing) return
 
-    const queuedAnalysis = consumeQueuedAnalysis()
+    const queuedAnalysis = consumeQueuedAnalysis() ?? readPendingAnalysis()
     if (!queuedAnalysis || startedAnalysisIdRef.current === queuedAnalysis.id) return
 
     startedAnalysisIdRef.current = queuedAnalysis.id
+    clearPendingAnalysis()
+
+    if (window.location.search.includes('run=1')) {
+      window.history.replaceState(null, '', '/workspace')
+    }
+
     void runAnalysisPipeline(queuedAnalysis.requirement)
   }, [consumeQueuedAnalysis, isAnalyzing])
 

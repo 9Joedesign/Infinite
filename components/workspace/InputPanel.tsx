@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { attachmentFromFile, revokeAttachmentPreview } from '@/lib/attachments'
 import { buildAnalysisRequirement } from '@/lib/analysis-input'
+import { savePendingAnalysis } from '@/lib/pending-analysis'
 import { extractStructuredInput } from '@/lib/structured-input'
 import type { StructuredInputState } from '@/lib/types'
 import AttachmentPill from './AttachmentPill'
@@ -74,8 +75,17 @@ export default function InputPanel() {
     mergeStructuredInput(extractedStructuredInput)
     const mergedRequirement = buildAnalysisRequirement(draftRequirement, nextStructuredInput, attachments)
     if (!mergedRequirement.trim() || isAnalyzing) return
-    queueAnalysis(mergedRequirement.trim())
-    router.push('/workspace')
+    const analysisRequirement = mergedRequirement.trim()
+
+    queueAnalysis(analysisRequirement)
+    savePendingAnalysis(analysisRequirement)
+    router.push('/workspace?run=1')
+
+    window.setTimeout(() => {
+      if (window.location.pathname !== '/workspace') {
+        window.location.assign('/workspace?run=1')
+      }
+    }, 300)
   }
 
   const handleFiles = async (fileList: FileList | File[]) => {
