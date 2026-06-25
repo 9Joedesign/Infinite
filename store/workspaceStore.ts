@@ -63,6 +63,7 @@ interface WorkspaceState {
   consumeQueuedAnalysis: () => QueuedAnalysis | null
   setStageStatus: (id: StageId, status: StageStatus) => void
   appendStageContent: (id: StageId, text: string) => void
+  replaceStageContent: (id: StageId, content: string) => void
   resetStages: () => void
   reset: () => void
 }
@@ -176,6 +177,17 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         [id]: {
           ...state.stages[id],
           content: state.stages[id].content + text,
+        },
+      },
+    })),
+
+  replaceStageContent: (id, content) =>
+    set((state) => ({
+      stages: {
+        ...state.stages,
+        [id]: {
+          ...state.stages[id],
+          content,
         },
       },
     })),

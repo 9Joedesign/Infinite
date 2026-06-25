@@ -7,15 +7,10 @@ import MermaidDiagram from './MermaidDiagram'
 import DownloadMermaidImageButton from './DownloadMermaidImageButton'
 import { extractMermaidBlocks } from '@/lib/mermaid-utils'
 import { removeMermaidErrorArtifacts } from '@/lib/mermaid-render'
+import { unwrapMarkdownFence } from '@/lib/markdown'
 
 interface MarkdownRendererProps {
   content: string
-}
-
-function unwrapMarkdownFence(content: string) {
-  const trimmed = content.trim()
-  const match = trimmed.match(/^```(?:markdown|md)\s*\n([\s\S]*?)\n```$/i)
-  return match ? match[1].trim() : content
 }
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {

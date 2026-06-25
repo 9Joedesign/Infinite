@@ -1,5 +1,6 @@
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import type { KnowledgeUsage, StageId } from '@/lib/types'
+import { unwrapMarkdownFence } from '@/lib/markdown'
 
 async function fetchStream(
   url: string,
@@ -62,7 +63,9 @@ export async function runAnalysisPipeline(
       (chunk) => store.appendStageContent(0, chunk),
       (usage) => store.setKnowledgeUsage(usage)
     )
-    previousResults[0] = stage0Result
+    const stage0Content = unwrapMarkdownFence(stage0Result)
+    store.replaceStageContent(0, stage0Content)
+    previousResults[0] = stage0Content
     store.setStageStatus(0, 'done')
 
     // Stage 1: Decomposition
@@ -72,7 +75,9 @@ export async function runAnalysisPipeline(
       { requirement, clarifyAnswers, stage: 1, previousResults },
       (chunk) => store.appendStageContent(1, chunk)
     )
-    previousResults[1] = stage1Result
+    const stage1Content = unwrapMarkdownFence(stage1Result)
+    store.replaceStageContent(1, stage1Content)
+    previousResults[1] = stage1Content
     store.setStageStatus(1, 'done')
 
     // Stage 2: Requirement Completeness
@@ -82,7 +87,9 @@ export async function runAnalysisPipeline(
       { requirement, clarifyAnswers, stage: 2, previousResults },
       (chunk) => store.appendStageContent(2, chunk)
     )
-    previousResults[2] = stage2Result
+    const stage2Content = unwrapMarkdownFence(stage2Result)
+    store.replaceStageContent(2, stage2Content)
+    previousResults[2] = stage2Content
     store.setStageStatus(2, 'done')
 
     // Stage 3: Risk Assumptions
@@ -92,7 +99,9 @@ export async function runAnalysisPipeline(
       { requirement, clarifyAnswers, stage: 3, previousResults },
       (chunk) => store.appendStageContent(3, chunk)
     )
-    previousResults[3] = stage3Result
+    const stage3Content = unwrapMarkdownFence(stage3Result)
+    store.replaceStageContent(3, stage3Content)
+    previousResults[3] = stage3Content
     store.setStageStatus(3, 'done')
 
     // Stage 4: Flow and Information Architecture
@@ -102,7 +111,9 @@ export async function runAnalysisPipeline(
       { requirement, clarifyAnswers, stage: 4, previousResults },
       (chunk) => store.appendStageContent(4, chunk)
     )
-    previousResults[4] = stage4Result
+    const stage4Content = unwrapMarkdownFence(stage4Result)
+    store.replaceStageContent(4, stage4Content)
+    previousResults[4] = stage4Content
     store.setStageStatus(4, 'done')
 
     // Stage 5: Design Opportunities
@@ -112,7 +123,9 @@ export async function runAnalysisPipeline(
       { requirement, clarifyAnswers, stage: 5, previousResults },
       (chunk) => store.appendStageContent(5, chunk)
     )
-    previousResults[5] = stage5Result
+    const stage5Content = unwrapMarkdownFence(stage5Result)
+    store.replaceStageContent(5, stage5Content)
+    previousResults[5] = stage5Content
     store.setStageStatus(5, 'done')
 
     // Stage 6: Priority
@@ -122,7 +135,9 @@ export async function runAnalysisPipeline(
       { requirement, clarifyAnswers, stage: 6, previousResults },
       (chunk) => store.appendStageContent(6, chunk)
     )
-    previousResults[6] = stage6Result
+    const stage6Content = unwrapMarkdownFence(stage6Result)
+    store.replaceStageContent(6, stage6Content)
+    previousResults[6] = stage6Content
     store.setStageStatus(6, 'done')
 
     const finalState = useWorkspaceStore.getState()

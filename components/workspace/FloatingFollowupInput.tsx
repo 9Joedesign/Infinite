@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useId, useState } from 'react'
 import { ArrowUpRight, Loader2, Paperclip } from 'lucide-react'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { attachmentFromFile, revokeAttachmentPreview } from '@/lib/attachments'
@@ -28,7 +28,7 @@ export default function FloatingFollowupInput({ sidebarCollapsed = false }: Floa
   } = useWorkspaceStore()
   const [followupText, setFollowupText] = useState('')
   const [isDragging, setIsDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputId = useId()
   const hasFollowupInput = followupText.trim().length > 0 || attachments.length > 0
 
   if (!reportReady) return null
@@ -144,15 +144,14 @@ export default function FloatingFollowupInput({ sidebarCollapsed = false }: Floa
         ) : null}
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-black/6 bg-slate-100 text-slate-600 transition hover:bg-white hover:text-slate-950"
+          <label
+            htmlFor={fileInputId}
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-black/6 bg-slate-100 text-slate-600 transition hover:bg-white hover:text-slate-950"
             aria-label="添加补充附件"
             title="添加补充附件"
           >
             <Paperclip className="h-4 w-4" />
-          </button>
+          </label>
 
           <div className="flex min-h-9 min-w-0 flex-1 items-center">
             <textarea
@@ -187,10 +186,10 @@ export default function FloatingFollowupInput({ sidebarCollapsed = false }: Floa
         </div>
 
         <input
-          ref={fileInputRef}
+          id={fileInputId}
           type="file"
           accept="image/*,.txt,.md,.markdown,.json,.csv,.tsv,.pdf,.doc,.docx,.ppt,.pptx"
-          className="hidden"
+          className="sr-only"
           multiple
           onChange={handleFileUpload}
         />

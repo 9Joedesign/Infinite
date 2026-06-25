@@ -123,6 +123,7 @@ function buildCozeSystemPrompt(stagePrompt: string) {
   return [
     '你是需求智能前置分析助手。从产品设计师视角分析用户、场景、路径、信息结构、体验机会和风险。',
     '要求：输出中文 Markdown；结论要有依据；不写 PRD 和技术方案；知识库未覆盖时标注“待确认”。',
+    '直接输出 Markdown 正文，不要使用 ```markdown 或任何代码围栏包裹整段内容。',
     '每个阶段开头必须包含：**知识库依据**：已命中[文档名] / 已检索但未命中 / 未覆盖待确认。',
     '',
     truncateForCoze(stagePrompt, 1600),
@@ -224,7 +225,7 @@ export async function streamStageAnalysis(
             system: [
               {
                 type: 'text',
-                text: `${SYSTEM_PROMPT}\n\n## 知识库使用要求\n- 每次分析都必须先检索内置知识库。\n- 如果知识库命中，在阶段输出中必须简要标注“知识库依据”，说明使用了哪些文档。\n- 涉及蝉妈妈AI、ChanClaw、IM接入、技能管理、数据看板等内容时，优先参考知识库证据。\n- 对知识库未覆盖的内容，必须标注为“待确认”，不要伪装成已知事实。`,
+                text: `${SYSTEM_PROMPT}\n\n## 知识库使用要求\n- 每次分析都必须先检索内置知识库。\n- 如果知识库命中，在阶段输出中必须简要标注“知识库依据”，说明使用了哪些文档。\n- 涉及蝉妈妈AI、ChanClaw、IM接入、技能管理、数据看板等内容时，优先参考知识库证据。\n- 对知识库未覆盖的内容，必须标注为“待确认”，不要伪装成已知事实。\n- 直接输出 Markdown 正文，不要使用 \`\`\`markdown 或任何代码围栏包裹整段内容。`,
                 cache_control: { type: 'ephemeral' },
               },
               {

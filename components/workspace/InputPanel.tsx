@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { attachmentFromFile, revokeAttachmentPreview } from '@/lib/attachments'
 import { buildAnalysisRequirement } from '@/lib/analysis-input'
@@ -36,7 +36,7 @@ export default function InputPanel() {
     isAnalyzing,
     queueAnalysis,
   } = useWorkspaceStore()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputId = useId()
   const requirementTextareaRef = useRef<HTMLTextAreaElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [draftRequirement, setDraftRequirement] = useState('')
@@ -185,14 +185,13 @@ export default function InputPanel() {
             />
 
             <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-black/6 pt-4">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+              <label
+                htmlFor={fileInputId}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
               >
                 <Paperclip className="h-4 w-4" />
                 添加素材
-              </button>
+              </label>
               <div className="ml-auto inline-flex items-center gap-2 px-1 py-2 text-xs text-[lab(16.132_-0.318035_-14.6672)]">
                 <Sparkles className="h-3.5 w-3.5" />
                 Cmd/Ctrl + Enter 快速开始
@@ -238,10 +237,10 @@ export default function InputPanel() {
         </div>
 
         <input
-          ref={fileInputRef}
+          id={fileInputId}
           type="file"
           accept="image/*,.txt,.md,.markdown,.json,.csv,.tsv,.pdf,.doc,.docx,.ppt,.pptx"
-          className="hidden"
+          className="sr-only"
           multiple
           onChange={handleFileUpload}
         />
