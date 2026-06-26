@@ -1,4 +1,5 @@
 import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 interface KnowledgeDocument {
@@ -33,6 +34,7 @@ export interface KnowledgeContext {
 const KNOWLEDGE_ROOT = join(/* turbopackIgnore: true */ process.cwd(), 'data', 'knowledge')
 const BUILT_IN_KNOWLEDGE_DIR = join(KNOWLEDGE_ROOT, 'built-in')
 const USER_KNOWLEDGE_DIR = join(KNOWLEDGE_ROOT, 'uploads')
+const DELETED_UPLOADS_FILE = join(tmpdir(), 'req-analyzer-deleted-knowledge.json')
 const USER_KNOWLEDGE_MAX_CHARS = 16000
 
 const KNOWLEDGE_DOCUMENTS: KnowledgeDocument[] = [
@@ -120,10 +122,31 @@ function safeKnowledgeFileName(name: string) {
 async function listUploadedKnowledgeFiles() {
   await mkdir(USER_KNOWLEDGE_DIR, { recursive: true })
   const names = await readdir(USER_KNOWLEDGE_DIR)
+  const deletedFiles = await readDeletedUploadedKnowledgeFiles()
 
   return names
-    .filter((name) => !name.startsWith('.'))
+    .filter((name) => !name.startsWith('.') && !deletedFiles.has(name))
     .map((name) => ({ fileName: name, filePath: `${USER_KNOWLEDGE_DIR}/${name}` }))
+}
+
+async function readDeletedUploadedKnowledgeFiles() {
+  try {
+    const raw = await readFile(DELETED_UPLOADS_FILE, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return new Set(parsed.filter((value): value is string => typeof value === 'string'))
+    }
+  } catch {
+    // Missing or malformed tombstone files should not block knowledge loading.
+  }
+
+  return new Set<string>()
+}
+
+async function markUploadedKnowledgeDeleted(fileName: string) {
+  const deletedFiles = await readDeletedUploadedKnowledgeFiles()
+  deletedFiles.add(fileName)
+  await writeFile(DELETED_UPLOADS_FILE, JSON.stringify([...deletedFiles], null, 2), 'utf8')
 }
 
 export async function listKnowledgeDocuments(): Promise<KnowledgeListItem[]> {
@@ -202,7 +225,12 @@ export async function deleteKnowledgeDocumentById(id: string) {
   const target = uploadedFiles.find((file) => file.fileName === fileName)
   if (!target) return { deleted: false, reason: 'not-found' as const }
 
-  await unlink(target.filePath)
+  try {
+    await unlink(target.filePath)
+  } catch {
+    await markUploadedKnowledgeDeleted(fileName)
+  }
+
   return { deleted: true, reason: 'deleted' as const }
 }
 
