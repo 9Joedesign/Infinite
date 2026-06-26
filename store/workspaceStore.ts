@@ -59,6 +59,7 @@ interface WorkspaceState {
   setKnowledgeUsage: (usage: KnowledgeUsage | null) => void
   addReportHistory: (item: ReportHistoryItem) => void
   openReportHistory: (id: string) => void
+  deleteReportHistory: (id: string) => void
   queueAnalysis: (requirement: string) => void
   consumeQueuedAnalysis: () => QueuedAnalysis | null
   setStageStatus: (id: StageId, status: StageStatus) => void
@@ -146,6 +147,10 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         isAnalyzing: false,
       }
     }),
+  deleteReportHistory: (id) =>
+    set((state) => ({
+      reportHistory: state.reportHistory.filter((history) => history.id !== id),
+    })),
   queueAnalysis: (requirement) =>
     set({
       queuedAnalysis: {

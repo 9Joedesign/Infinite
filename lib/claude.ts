@@ -1,6 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { ChatOpenAI } from '@langchain/openai'
-import { HeaderUtils } from 'coze-coding-dev-sdk'
 import { SYSTEM_PROMPT } from './prompts/system'
 import { STAGE0_PROMPT } from './prompts/stage0'
 import { STAGE1_PROMPT } from './prompts/stage1'
@@ -33,7 +32,22 @@ function getAnthropicClient() {
 
 function getForwardHeaders(headers?: Headers) {
   if (!headers) return undefined
-  const forwardHeaders = HeaderUtils.extractForwardHeaders(headers)
+  const forwardHeaders: Record<string, string> = {}
+
+  headers.forEach((value, key) => {
+    const normalizedKey = key.toLowerCase()
+
+    if (
+      normalizedKey.startsWith('x-coze-') ||
+      normalizedKey.startsWith('x-tt-') ||
+      normalizedKey === 'x-request-id' ||
+      normalizedKey === 'x-b3-traceid' ||
+      normalizedKey === 'x-b3-spanid'
+    ) {
+      forwardHeaders[key] = value
+    }
+  })
+
   return Object.keys(forwardHeaders).length > 0 ? forwardHeaders : undefined
 }
 

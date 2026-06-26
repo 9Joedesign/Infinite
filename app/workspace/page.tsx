@@ -30,6 +30,109 @@ function NativeAnalysisFallback({ requirement }: { requirement: string }) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
+  const unwrapMarkdownFence = (value) => {
+    const trimmed = String(value || '').trim();
+    const openingFence = trimmed.match(/^\\\`\\\`\\\`(?:markdown|md)\\s*\\n/i);
+    if (!openingFence) return value;
+    return trimmed.slice(openingFence[0].length).replace(/\\n\\\`\\\`\\\`[\\t ]*$/u, '').trim();
+  };
+
+  const renderInlineMarkdown = (value) => escapeHtml(value)
+    .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>')
+    .replace(/\\\`([^\\\`]+)\\\`/g, '<code>$1</code>');
+
+  const renderTable = (lines) => {
+    const rows = lines
+      .filter((line) => !/^\\s*\\|?\\s*:?-{3,}:?/.test(line.replace(/\\|/g, '').trim()))
+      .map((line) => line.trim().replace(/^\\||\\|$/g, '').split('|').map((cell) => renderInlineMarkdown(cell.trim())));
+
+    if (!rows.length) return '';
+
+    return '<div class="my-5 overflow-x-auto"><table class="w-full border-collapse text-xs">' +
+      rows.map((row, index) => {
+        const tag = index === 0 ? 'th' : 'td';
+        const cellClass = index === 0
+          ? 'border border-slate-200 bg-slate-50 px-3 py-2 text-left font-medium text-slate-700'
+          : 'border border-slate-200 px-3 py-2 align-top text-slate-700';
+
+        return '<tr>' + row.map((cell) => '<' + tag + ' class="' + cellClass + '">' + cell + '</' + tag + '>').join('') + '</tr>';
+      }).join('') +
+    '</table></div>';
+  };
+
+  const renderMarkdown = (value) => {
+    const content = unwrapMarkdownFence(value);
+    const lines = String(content || '').split('\\n');
+    const parts = [];
+    let paragraph = [];
+    let list = [];
+    let table = [];
+
+    const flushParagraph = () => {
+      if (!paragraph.length) return;
+      parts.push('<p class="my-3 text-sm leading-7 text-slate-700">' + renderInlineMarkdown(paragraph.join(' ')) + '</p>');
+      paragraph = [];
+    };
+
+    const flushList = () => {
+      if (!list.length) return;
+      parts.push('<ul class="my-3 list-disc space-y-1 pl-5 text-sm leading-7 text-slate-700">' + list.map((item) => '<li>' + renderInlineMarkdown(item) + '</li>').join('') + '</ul>');
+      list = [];
+    };
+
+    const flushTable = () => {
+      if (!table.length) return;
+      parts.push(renderTable(table));
+      table = [];
+    };
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        flushParagraph();
+        flushList();
+        flushTable();
+        continue;
+      }
+
+      if (/^\\|.+\\|$/.test(trimmed)) {
+        flushParagraph();
+        flushList();
+        table.push(trimmed);
+        continue;
+      }
+
+      flushTable();
+
+      const heading = trimmed.match(/^(#{1,4})\\s+(.+)$/);
+      if (heading) {
+        flushParagraph();
+        flushList();
+        const levelClass = heading[1].length <= 2
+          ? 'mt-8 mb-4 text-xl font-semibold tracking-[-0.02em] text-slate-950'
+          : 'mt-6 mb-3 text-lg font-semibold tracking-[-0.02em] text-slate-950';
+        parts.push('<h3 class="' + levelClass + '">' + renderInlineMarkdown(heading[2]) + '</h3>');
+        continue;
+      }
+
+      const listItem = trimmed.match(/^[-*]\\s+(.+)$/);
+      if (listItem) {
+        flushParagraph();
+        list.push(listItem[1]);
+        continue;
+      }
+
+      paragraph.push(trimmed);
+    }
+
+    flushParagraph();
+    flushList();
+    flushTable();
+
+    return '<div class="mt-6 rounded-[24px] border border-black/6 bg-white/70 p-5">' + parts.join('') + '</div>';
+  };
+
   const renderStage = (index, status, content = '') => {
     const statusText = status === 'running' ? '分析中' : status === 'done' ? '已完成' : status === 'error' ? '出错' : '等待中';
     const statusClass = status === 'running' ? 'text-slate-950' : status === 'done' ? 'text-emerald-600' : status === 'error' ? 'text-red-600' : 'text-slate-400';
@@ -39,7 +142,7 @@ function NativeAnalysisFallback({ requirement }: { requirement: string }) {
         '<p class="mt-1 text-xs text-slate-500">' + escapeHtml(stages[index][1]) + '</p></div>' +
         '<span class="text-xs font-medium ' + statusClass + '">' + statusText + '</span>' +
       '</div>' +
-      (content ? '<pre class="mt-6 whitespace-pre-wrap rounded-[24px] border border-black/6 bg-white/70 p-5 text-sm leading-7 text-slate-700">' + escapeHtml(content) + '</pre>' : '') +
+      (content ? renderMarkdown(content) : '') +
     '</section>';
   };
 
@@ -91,8 +194,9 @@ function NativeAnalysisFallback({ requirement }: { requirement: string }) {
           renderAll(results, stage);
         }
 
-        previousResults[stage] = content;
-        results[stage] = content;
+        const normalizedContent = unwrapMarkdownFence(content);
+        previousResults[stage] = normalizedContent;
+        results[stage] = normalizedContent;
         renderAll(results, stage + 1);
       }
 

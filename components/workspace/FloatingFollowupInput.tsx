@@ -129,7 +129,7 @@ export default function FloatingFollowupInput({ sidebarCollapsed = false }: Floa
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        className={`pointer-events-auto mx-auto w-4/5 max-w-[600px] rounded-[24px] border bg-white/88 p-2.5 shadow-[0_18px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl transition ${
+        className={`pointer-events-auto mx-auto w-4/5 max-w-[480px] rounded-[24px] border bg-white/88 p-2.5 shadow-[0_18px_60px_rgba(15,23,42,0.14)] backdrop-blur-xl transition ${
           isDragging ? 'border-slate-900/20 ring-1 ring-slate-900/10' : 'border-white/70'
         }`}
       >
