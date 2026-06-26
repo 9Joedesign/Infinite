@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 interface KnowledgeDocument {
@@ -188,6 +188,22 @@ export async function readKnowledgeDocumentById(id: string) {
     fileName: `${builtIn.title}.md`,
     content: await readFile(builtIn.absolutePath, 'utf8'),
   }
+}
+
+export async function deleteKnowledgeDocumentById(id: string) {
+  if (!id.startsWith('uploaded:')) {
+    return { deleted: false, reason: 'built-in' as const }
+  }
+
+  const fileName = id.slice('uploaded:'.length).split('/').pop()?.split('\\').pop() || ''
+  if (!fileName) return { deleted: false, reason: 'not-found' as const }
+
+  const uploadedFiles = await listUploadedKnowledgeFiles()
+  const target = uploadedFiles.find((file) => file.fileName === fileName)
+  if (!target) return { deleted: false, reason: 'not-found' as const }
+
+  await unlink(target.filePath)
+  return { deleted: true, reason: 'deleted' as const }
 }
 
 export async function loadKnowledgeContext(requirement: string): Promise<KnowledgeContext> {

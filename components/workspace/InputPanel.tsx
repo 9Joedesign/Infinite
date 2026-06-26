@@ -83,14 +83,15 @@ export default function InputPanel() {
     const mergedRequirement = buildAnalysisRequirement(latestRequirement, nextStructuredInput, attachments)
     if (!mergedRequirement.trim() || isAnalyzing) return
     const analysisRequirement = mergedRequirement.trim()
+    const analysisTarget = `/workspace?run=1&requirement=${encodeURIComponent(analysisRequirement)}`
 
     queueAnalysis(analysisRequirement)
     savePendingAnalysis(analysisRequirement)
-    router.push('/workspace?run=1')
+    router.push(analysisTarget)
 
     window.setTimeout(() => {
       if (window.location.pathname !== '/workspace') {
-        window.location.assign('/workspace?run=1')
+        window.location.assign(analysisTarget)
       }
     }, 300)
   }

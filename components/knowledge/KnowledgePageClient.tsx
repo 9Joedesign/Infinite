@@ -2,7 +2,7 @@
 
 import Header from '@/components/layout/Header'
 import type { KnowledgeListItem } from '@/lib/knowledge-base'
-import { Download, FileText, Loader2, Upload } from 'lucide-react'
+import { Download, FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { useId, useState } from 'react'
 
 function formatSize(size: number) {
@@ -30,6 +30,8 @@ export default function KnowledgePageClient({
   const [documents, setDocuments] = useState<KnowledgeListItem[]>(initialDocuments)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [error, setError] = useState(initialError)
   const fileInputId = useId()
 
@@ -68,6 +70,28 @@ export default function KnowledgePageClient({
       setError('上传失败，请确认文件格式后重试。')
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleDelete = async (document: KnowledgeListItem) => {
+    if (document.source !== 'uploaded' || deletingId) return
+
+    if (deleteConfirmId !== document.id) {
+      setDeleteConfirmId(document.id)
+      return
+    }
+
+    try {
+      setDeletingId(document.id)
+      setError('')
+      const res = await fetch(document.downloadUrl, { method: 'DELETE' })
+      if (!res.ok) throw new Error('删除失败')
+      setDocuments((current) => current.filter((item) => item.id !== document.id))
+      setDeleteConfirmId(null)
+    } catch {
+      setError('删除失败，请稍后重试。')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -115,7 +139,7 @@ export default function KnowledgePageClient({
           ) : null}
 
           <div className="mt-8 overflow-hidden rounded-[28px] border border-black/6 bg-white/72">
-            <div className="grid grid-cols-[1fr_120px_120px_88px] gap-4 border-b border-black/6 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+            <div className="grid grid-cols-[1fr_120px_120px_120px] gap-4 border-b border-black/6 px-5 py-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
               <span>文档</span>
               <span>来源</span>
               <span>更新</span>
@@ -131,7 +155,7 @@ export default function KnowledgePageClient({
                 {documents.map((document) => (
                   <div
                     key={document.id}
-                    className="grid grid-cols-[1fr_120px_120px_88px] items-center gap-4 px-5 py-4 text-sm"
+                    className="grid grid-cols-[1fr_120px_120px_120px] items-center gap-4 px-5 py-4 text-sm"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <FileText className="h-4 w-4 shrink-0 text-slate-400" />
@@ -144,13 +168,45 @@ export default function KnowledgePageClient({
                       {document.source === 'built-in' ? '内置' : '上传'}
                     </span>
                     <span className="text-slate-500">{formatDate(document.updatedAt)}</span>
-                    <a
-                      href={document.downloadUrl}
-                      className="ml-auto flex h-9 w-9 items-center justify-center rounded-full border border-black/6 bg-white/72 text-slate-500 transition hover:bg-white hover:text-slate-950"
-                      aria-label={`下载${document.title}`}
-                    >
-                      <Download className="h-4 w-4" />
-                    </a>
+                    <div className="ml-auto flex items-center justify-end gap-2">
+                      <a
+                        href={document.downloadUrl}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-black/6 bg-white/72 text-slate-500 transition hover:bg-white hover:text-slate-950"
+                        aria-label={`下载${document.title}`}
+                        title={`下载${document.title}`}
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                      {document.source === 'uploaded' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(document)}
+                          onMouseLeave={() =>
+                            deleteConfirmId === document.id && setDeleteConfirmId(null)
+                          }
+                          disabled={deletingId !== null}
+                          className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-xs font-medium transition ${
+                            deleteConfirmId === document.id
+                              ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                              : 'border-black/6 bg-white/72 text-slate-500 hover:bg-white hover:text-red-600'
+                          } disabled:cursor-not-allowed disabled:opacity-60`}
+                          aria-label={
+                            deleteConfirmId === document.id
+                              ? `确认删除${document.title}`
+                              : `删除${document.title}`
+                          }
+                          title={deleteConfirmId === document.id ? '再次点击确认删除' : '删除'}
+                        >
+                          {deletingId === document.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : deleteConfirmId === document.id ? (
+                            '确认删除'
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 ))}
               </div>

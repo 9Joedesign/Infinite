@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readKnowledgeDocumentById } from '@/lib/knowledge-base'
+import { deleteKnowledgeDocumentById, readKnowledgeDocumentById } from '@/lib/knowledge-base'
 
 export const runtime = 'nodejs'
 
@@ -20,4 +20,22 @@ export async function GET(
       'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(document.fileName)}`,
     },
   })
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const result = await deleteKnowledgeDocumentById(decodeURIComponent(id))
+
+  if (result.deleted) {
+    return NextResponse.json({ ok: true })
+  }
+
+  if (result.reason === 'built-in') {
+    return NextResponse.json({ error: 'Built-in documents cannot be deleted' }, { status: 403 })
+  }
+
+  return NextResponse.json({ error: 'Not found' }, { status: 404 })
 }
